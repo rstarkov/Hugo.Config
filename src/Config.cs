@@ -13,7 +13,7 @@ namespace Hugo.Config
 
     static class ModuleConfigProvider
     {
-        private static object LoadSettings(IServiceProvider provider, Type configType)
+        private static object LoadSettings(Type configType)
         {
             var filename = $"config.{configType.Name.Replace("Config", "")}.json";
             if (File.Exists(filename))
@@ -26,11 +26,16 @@ namespace Hugo.Config
             }
         }
 
+        public static T LoadSettings<T>() where T : IModuleConfig
+        {
+            return (T) LoadSettings(typeof(T));
+        }
+
         public static void AddAll(IServiceCollection services)
         {
             var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (var type in types)
-                services.Add(new ServiceDescriptor(type, provider => LoadSettings(provider, type), ServiceLifetime.Singleton));
+                services.Add(new ServiceDescriptor(type, provider => LoadSettings(type), ServiceLifetime.Singleton));
         }
     }
 }
