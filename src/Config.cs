@@ -35,7 +35,10 @@ namespace Hugo.Config
         {
             var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
             foreach (var type in types)
+            {
                 services.Add(new ServiceDescriptor(type, provider => LoadSettings(type), ServiceLifetime.Singleton));
+                services.Add(new ServiceDescriptor(typeof(IModuleConfig), provider => LoadSettings(type), ServiceLifetime.Singleton));
+            }
         }
     }
 }
