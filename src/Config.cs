@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -82,10 +82,7 @@ namespace Hugo.Config
         public void AddConfigsAsServices(IServiceCollection services)
         {
             foreach (var kvp in _instances)
-            {
                 services.Add(new ServiceDescriptor(kvp.Key, kvp.Value));
-                services.Add(new ServiceDescriptor(typeof(IModuleConfig), kvp.Value));
-            }
         }
 
         /// <summary>
