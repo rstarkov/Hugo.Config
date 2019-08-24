@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,14 +15,23 @@ namespace Hugo.Config
 
     public interface IConfigProvider
     {
+        /// <summary>Gets the core app configuration.</summary>
         AppConfig AppConfig { get; }
+
+        /// <summary>Registers all module configurations as singleton services.</summary>
         void AddConfigsAsServices(IServiceCollection services);
+
+        /// <summary>
+        ///     Combines the path elements with the base path from which the configuration was loaded, in order to resolve
+        ///     paths relative to the configuration files.</summary>
+        string PathCombine(params string[] paths);
     }
 
     class ConfigProvider : IConfigProvider
     {
         public AppConfig AppConfig { get; private set; }
 
+        private string _path;
         private Dictionary<Type, object> _instances;
 
         /// <summary>
@@ -43,17 +52,18 @@ namespace Hugo.Config
         ///     Path to the folder containing JSON files to load. May be absolute, or relative to the executable location.</param>
         public ConfigProvider(string environment, string path) : this()
         {
-            loadEnvironment(_instances, environment, path);
+            _path = path;
+            loadEnvironment(_instances, environment);
             AppConfig = (AppConfig) _instances[typeof(AppConfig)];
         }
 
         private static IEnumerable<Type> _moduleConfigTypes => Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
         private static string getFileName(Type type, string environment, string path) => Path.GetFullPath(PathUtil.AppPathCombine(path, $"{environment}.{type.Name.Replace("Config", "")}.config.json"));
 
-        private static void loadEnvironment(Dictionary<Type, object> instances, string environment, string path)
+        private void loadEnvironment(Dictionary<Type, object> instances, string environment)
         {
             // Get parent environment name from the AppConfig for this environment
-            var appConfigFile = getFileName(typeof(AppConfig), environment, path);
+            var appConfigFile = getFileName(typeof(AppConfig), environment, _path);
             string parentEnvironment;
             try
             {
@@ -66,12 +76,12 @@ namespace Hugo.Config
 
             // Load parent environment
             if (parentEnvironment != null)
-                loadEnvironment(instances, parentEnvironment, path);
+                loadEnvironment(instances, parentEnvironment);
 
             // Load this environment
             foreach (var type in instances.Keys)
             {
-                var configFile = getFileName(type, environment, path);
+                var configFile = getFileName(type, environment, _path);
                 if (File.Exists(configFile))
                     ClassifyJson.DeserializeFileIntoObject(configFile, instances[type]);
                 else if (parentEnvironment == null)
@@ -93,6 +103,13 @@ namespace Hugo.Config
         {
             foreach (var kvp in _instances)
                 ClassifyJson.SerializeToFile(kvp.Key, kvp.Value, getFileName(kvp.Key, environment, path));
+        }
+
+        public string PathCombine(params string[] paths)
+        {
+            if (_path == null)
+                throw new InvalidOperationException("This config provider was not instantiated by loading settings from a path");
+            return Path.GetFullPath(Path.Combine(new[] { _path }.Concat(paths).ToArray()));
         }
     }
 }
