@@ -58,7 +58,7 @@ namespace Hugo.Config
         }
 
         private static IEnumerable<Type> _moduleConfigTypes => Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
-        private static string getFileName(Type type, string environment, string path) => Path.GetFullPath(PathUtil.AppPathCombine(path, $"{environment}.{type.Name.Replace("Config", "")}.config.json"));
+        private static string getFileName(Type type, string environment, string path) => Path.GetFullPath(PathUtil.AppPathCombine(path, $"{environment}.{type.Name.Replace("Config", "").ToLower()}.json"));
 
         private void loadEnvironment(Dictionary<Type, object> instances, string environment)
         {
