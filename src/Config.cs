@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using RT.Serialization;
 using RT.Util;
-using RT.Util.Serialization;
 
 namespace Hugo.Config
 {
