@@ -108,8 +108,9 @@ namespace Hugo.Config
     public class ConfigProvider : IConfigProvider
     {
         public AppConfig AppConfig { get; private set; }
+        public string EnvName { get; private set; }
+        public string EnvPath { get; private set; }
 
-        private string _path;
         private IConfigOverrideProvider _configOverrideProvider;
         private Dictionary<Type, object> _instances;
         private JsonSerializer _jsonSerializer;
@@ -123,28 +124,35 @@ namespace Hugo.Config
         }
 
         /// <summary>
-        ///     Loads module configuration files for the specified environment from JSON files. Files must be named
-        ///     [environment].[module].config.json. The config file for App module must exist. If the App file specifies
-        ///     another environment to inherit the config from, that environment is loaded first. The base environment (which
-        ///     does not inherit from another) requires every module's config file.</summary>
+        ///     Loads configuration for the specified environment from JSON file named conf.[environment].json. Resolves
+        ///     configuration inheritance by loading additional environment files as required.</summary>
         /// <param name="environment">
-        ///     Environment name. Case-insensitive.</param>
+        ///     Environment name. Case-insensitive. May consist of two parts, path:env, separated by a colon. If specified,
+        ///     this path takes precedence over the <paramref name="path"/> parameter.</param>
         /// <param name="path">
-        ///     Path to the folder containing JSON files to load. May be absolute, or relative to the executable location.</param>
+        ///     Path to the folder containing JSON files to load. May be absolute, or relative to the executable location. The
+        ///     path in <paramref name="environment"/>, if specified, will override this path.</param>
         public ConfigProvider(string environment, string path, IConfigOverrideProvider configOverrideProvider = null) : this()
         {
-            _path = path;
+            EnvPath = path;
             _configOverrideProvider = configOverrideProvider;
+            if (environment.Contains(":"))
+            {
+                var parts = environment.Split(":");
+                EnvPath = string.Join(":", parts.Take(parts.Length - 1));
+                environment = parts.Last();
+            }
+            EnvPath = Path.GetFullPath(PathUtil.AppPathCombine(EnvPath));
             loadEnvironment(environment);
+            EnvName = environment;
             AppConfig = (AppConfig) _instances[typeof(AppConfig)];
         }
 
         private static IEnumerable<Type> _moduleConfigTypes => Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
-        private static string getFileName(string environment, string path) => Path.GetFullPath(PathUtil.AppPathCombine(path, $"conf.{environment}.json"));
 
         private JObject loadEnvironmentJson(string environment)
         {
-            var configFile = getFileName(environment, _path);
+            var configFile = Path.Combine(EnvPath, $"conf.{environment}.json");
             JObject json;
             try
             {
@@ -258,9 +266,7 @@ namespace Hugo.Config
 
         public string PathCombine(params string[] paths)
         {
-            if (_path == null)
-                throw new InvalidOperationException("This config provider was not instantiated by loading settings from a path");
-            return Path.GetFullPath(Path.Combine(new[] { _path }.Concat(paths).ToArray()));
+            return Path.GetFullPath(Path.Combine(new[] { EnvPath }.Concat(paths).ToArray()));
         }
     }
 }
