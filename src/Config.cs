@@ -27,6 +27,9 @@ namespace Hugo.Config
         ///     Combines the path elements with the base path from which the configuration was loaded, in order to resolve
         ///     paths relative to the configuration files.</summary>
         string PathCombine(params string[] paths);
+
+        string EnvName { get; }
+        string EnvPath { get; }
     }
 
     public class ConfigStringOverride
