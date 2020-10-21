@@ -24,6 +24,12 @@ namespace Hugo.Config
         void AddConfigsAsServices(IServiceCollection services);
 
         /// <summary>
+        ///     Returns a module configuration of the specified type. Throws if the type was not discovered as a module
+        ///     configuration type (<see cref="IModuleConfig"/> in the relevant assemblies). This method cannot return null as
+        ///     all valid config types are always instantiated and populated from config JSON.</summary>
+        TConfig GetConfig<TConfig>();
+
+        /// <summary>
         ///     Combines the path elements with the base path from which the configuration was loaded, in order to resolve
         ///     paths relative to the configuration files.</summary>
         string PathCombine(params string[] paths);
@@ -265,6 +271,13 @@ namespace Hugo.Config
         {
             foreach (var kvp in _instances)
                 services.Add(new ServiceDescriptor(kvp.Key, kvp.Value));
+        }
+
+        public TConfig GetConfig<TConfig>()
+        {
+            if (!_instances.TryGetValue(typeof(TConfig), out var result))
+                throw new InvalidOperationException($"No such configuration type: {typeof(TConfig).Name}");
+            return (TConfig) result;
         }
 
         public string PathCombine(params string[] paths)
