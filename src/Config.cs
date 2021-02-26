@@ -29,11 +29,6 @@ namespace Hugo.Config
         ///     all valid config types are always instantiated and populated from config JSON.</summary>
         TConfig GetConfig<TConfig>();
 
-        /// <summary>
-        ///     Combines the path elements with the base path from which the configuration was loaded, in order to resolve
-        ///     paths relative to the configuration files.</summary>
-        string PathCombine(params string[] paths);
-
         string EnvName { get; }
         string EnvPath { get; }
     }
@@ -279,10 +274,13 @@ namespace Hugo.Config
                 throw new InvalidOperationException($"No such configuration type: {typeof(TConfig).Name}");
             return (TConfig) result;
         }
+    }
 
-        public string PathCombine(params string[] paths)
+    public static class ConfigProviderExtensions
+    {
+        public static string PathCombine(this IConfigProvider configProvider, params string[] paths)
         {
-            return Path.GetFullPath(Path.Combine(new[] { EnvPath }.Concat(paths).ToArray()));
+            return Path.GetFullPath(Path.Combine(new[] { configProvider.EnvPath }.Concat(paths).ToArray()));
         }
     }
 }
