@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Octostache;
-using RT.Util;
 
 namespace Hugo.Config
 {
@@ -17,9 +16,6 @@ namespace Hugo.Config
 
     public interface IConfigProvider
     {
-        /// <summary>Gets the core app configuration.</summary>
-        AppConfig AppConfig { get; }
-
         /// <summary>Registers all module configurations as singleton services.</summary>
         void AddConfigsAsServices(IServiceCollection services);
 
@@ -111,7 +107,6 @@ namespace Hugo.Config
 
     public class ConfigProvider : IConfigProvider
     {
-        public AppConfig AppConfig { get; private set; }
         public string EnvName { get; private set; }
         public string EnvPath { get; private set; }
 
@@ -146,10 +141,9 @@ namespace Hugo.Config
                 EnvPath = string.Join(":", parts.Take(parts.Length - 1));
                 environment = parts.Last();
             }
-            EnvPath = Path.GetFullPath(PathUtil.AppPathCombine(EnvPath));
+            EnvPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), EnvPath));
             loadEnvironment(environment);
             EnvName = environment;
-            AppConfig = (AppConfig) _instances[typeof(AppConfig)];
         }
 
         private static IEnumerable<Type> _moduleConfigTypes => Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
