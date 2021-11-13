@@ -1,0 +1,22 @@
+﻿root = true
+
+# All files
+[*]
+indent_style = space
+
+# Code files
+[*.{cs,csx,json}]
+indent_size = 4
+insert_final_newline = true
+charset = utf-8-bom
+
+[*.cs]
+dotnet_sort_system_directives_first=true
+csharp_space_after_cast=true
+csharp_style_namespace_declarations=file_scoped:silent
+
+# CA1825: Avoid zero-length array allocations
+dotnet_diagnostic.CA1825.severity = none
+
+# IDE0044: Add readonly modifier
+dotnet_diagnostic.IDE0044.severity = none
