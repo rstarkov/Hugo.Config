@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -113,11 +113,13 @@ namespace Hugo.Config
         private IConfigOverrideProvider _configOverrideProvider;
         private Dictionary<Type, object> _instances;
         private JsonSerializer _jsonSerializer;
+        private List<Assembly> _assemblies;
 
         /// <summary>
         ///     Initialises module configurations with default values from code; does not load any JSON configs from disk.</summary>
-        public ConfigProvider()
+        public ConfigProvider(IEnumerable<Assembly> assemblies = null)
         {
+            _assemblies = (assemblies == null ? new[] { Assembly.GetEntryAssembly() } : assemblies).ToList();
             _instances = _moduleConfigTypes.ToDictionary(t => t, t => t.GetConstructor(Type.EmptyTypes).Invoke(new object[0]));
             _jsonSerializer = JsonSerializer.Create(new JsonSerializerSettings { });
         }
@@ -131,7 +133,7 @@ namespace Hugo.Config
         /// <param name="path">
         ///     Path to the folder containing JSON files to load. May be absolute, or relative to the executable location. The
         ///     path in <paramref name="environment"/>, if specified, will override this path.</param>
-        public ConfigProvider(string environment, string path, IConfigOverrideProvider configOverrideProvider = null) : this()
+        public ConfigProvider(string environment, string path, IConfigOverrideProvider configOverrideProvider = null, IEnumerable<Assembly> assemblies = null) : this(assemblies)
         {
             EnvPath = path;
             _configOverrideProvider = configOverrideProvider;
@@ -141,12 +143,12 @@ namespace Hugo.Config
                 EnvPath = string.Join(":", parts.Take(parts.Length - 1));
                 environment = parts.Last();
             }
-            EnvPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), EnvPath));
+            EnvPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(_assemblies.FirstOrDefault().Location), EnvPath));
             loadEnvironment(environment);
             EnvName = environment;
         }
 
-        private static IEnumerable<Type> _moduleConfigTypes => Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
+        private IEnumerable<Type> _moduleConfigTypes => _assemblies.SelectMany(a => a.GetTypes()).Where(t => typeof(IModuleConfig).IsAssignableFrom(t) && !t.IsAbstract);
 
         private JObject loadEnvironmentJson(string environment)
         {
