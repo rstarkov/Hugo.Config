@@ -33,12 +33,16 @@ namespace Hugo.Config
     {
         public string Path { get; set; }
         public string Value { get; set; }
+
+        public override string ToString() => Path;
     }
 
     public class ConfigJsonOverride
     {
         public string Path { get; set; }
         public JToken JsonValue { get; set; }
+
+        public override string ToString() => Path;
     }
 
     public interface IConfigOverrideProvider
