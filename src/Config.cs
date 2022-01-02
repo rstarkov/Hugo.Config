@@ -200,7 +200,7 @@ namespace Hugo.Config
             // Evaluate all of the Octostache substitutions
             walkJson(json, "", (JToken token, string fullPath) =>
             {
-                if (token is JValue jv && jv.Value is string s)
+                if (token is JValue jv && (jv.Value is string || jv.Value == null))
                     jv.Value = vars.Get(fullPath);
             });
 
