@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,18 +93,20 @@ namespace Hugo.Config
         ///     Adds all environment variables as overrides. Variables whose name starts with <paramref name="confPrefix"/>
         ///     are added with the prefix removed, so "conf:Foo" is added as "Foo". All other variables are added with
         ///     <paramref name="envPrefix"/>, so "Bar" is added as "env:Bar". "conf"-prefixed variables follow special rules
-        ///     for the value; see <see cref="AddOverride(string, string)"/>.</summary>
+        ///     for the value; see <see cref="AddOverride(string, string)"/>. On Linux, environment variable names get double
+        ///     underscores automatically replaced with ":".</summary>
         public void AddEnvironmentVariables(string envPrefix = "env:", string confPrefix = "conf:")
         {
-            var vars = Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>().OrderBy(v => v.Key);
+            var vars = Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>().Select(v => new { name = (string) v.Key, value = (string) v.Value });
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                vars = vars.Select(v => new { name = v.name.Replace("__", ":"), v.value });
+            vars = vars.OrderBy(v => v.name);
             foreach (var v in vars)
             {
-                var name = (string) v.Key;
-                var value = (string) v.Value;
-                if (!name.StartsWith(confPrefix))
-                    _stringOverrides.Add(new ConfigStringOverride { Path = envPrefix + name, Value = value });
+                if (!v.name.StartsWith(confPrefix))
+                    _stringOverrides.Add(new ConfigStringOverride { Path = envPrefix + v.name, Value = v.value });
                 else
-                    AddOverride(name.Substring(confPrefix.Length), value);
+                    AddOverride(v.name.Substring(confPrefix.Length), v.value);
             }
         }
     }
